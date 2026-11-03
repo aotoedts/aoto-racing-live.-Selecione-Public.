@@ -182,6 +182,7 @@ func _build_interface() -> void:
 	_button("QUALIDADE: ALTERNAR", settings_col, func(): quality_low = not quality_low; _save_settings())
 	_button("VELOCIDADE: ALTERNAR", settings_col, func(): speed_multiplier = 1.25 if speed_multiplier == 1.0 else 1.0; _save_settings())
 	_button("SOM ORIGINAL: LIGAR / DESLIGAR", settings_col, func(): music_enabled = not music_enabled; _save_settings())
+	_button("EVENTOS LOCAIS: LIGAR / DESLIGAR", settings_col, func(): event_bridge.set("enabled", not bool(event_bridge.get("enabled"))))
 	_button("VOLTAR", settings_col, _show_menu)
 
 func _show_menu() -> void:
