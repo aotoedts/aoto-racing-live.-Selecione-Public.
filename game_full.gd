@@ -41,6 +41,8 @@ var rng := RandomNumberGenerator.new()
 var arcade_audio: Node
 var smoke: Node3D
 var smoke_timer := 0.0
+var engine_audio: Node
+var event_bridge: Node
 
 func _ready() -> void:
 	rng.randomize()
@@ -51,6 +53,8 @@ func _ready() -> void:
 	add_child(arcade_audio)
 	smoke = load("res://drift_smoke.gd").new()
 	add_child(smoke)
+	engine_audio = load("res://engine_audio.gd").new()
+	add_child(engine_audio)
 	_show_menu()
 
 func _material(color: Color, emissive := false) -> StandardMaterial3D:
@@ -89,22 +93,11 @@ func _build_world() -> void:
 				_cube(track_mesh, Vector3(5, h, 5), Vector3(s * 24, h * 0.5 - 0.1, z), Color("#20253b"))
 				_cube(track_mesh, Vector3(5.1, 0.25, 5.1), Vector3(s * 24, h - 0.1, z), Color("#23c9f0"), true)
 	for i in range(2):
-		var vehicle := Node3D.new()
+		var vehicle: Node3D = load("res://sports_car.gd").new()
+		vehicle.set("paint", COLORS[i])
 		add_child(vehicle)
-		var paint := COLORS[i]
-		_cube(vehicle, Vector3(2.6, 0.6, 5.0), Vector3(0, 0.85, 0), paint)
-		_cube(vehicle, Vector3(2.05, 0.7, 2.2), Vector3(0, 1.48, -0.45), Color("#131c30"))
-		_cube(vehicle, Vector3(2.8, 0.12, 0.55), Vector3(0, 1.32, 2.1), paint)
-		_cube(vehicle, Vector3(1.8, 0.12, 0.2), Vector3(0, 1.65, 2.1), paint)
-		_cube(vehicle, Vector3(2.2, 0.18, 0.14), Vector3(0, 0.86, 2.55), Color("#ff243c"), true)
-		_cube(vehicle, Vector3(2.2, 0.18, 0.14), Vector3(0, 0.86, -2.55), Color("#ddfaff"), true)
-		var car_wheels: Array[MeshInstance3D] = []
-		for x in [-1.3, 1.3]:
-			for z in [-1.5, 1.5]:
-				var wheel := _cube(vehicle, Vector3(0.4, 0.8, 0.85), Vector3(x, 0.48, z), Color("#090a0f"))
-				car_wheels.append(wheel)
-		wheels.append(car_wheels)
 		vehicles.append(vehicle)
+		wheels.append([])
 	camera = Camera3D.new()
 	add_child(camera)
 	camera.current = true
@@ -196,6 +189,8 @@ func _show_menu() -> void:
 	settings_panel.visible = false
 	if arcade_audio != null:
 		arcade_audio.call("set_music", false, mode == 1)
+	if engine_audio != null:
+		engine_audio.call("set_engine", false, 0.0)
 
 func _show_settings() -> void:
 	menu.visible = false
@@ -225,6 +220,7 @@ func _toggle_pause() -> void:
 	if running:
 		paused = not paused
 		arcade_audio.call("set_music", music_enabled and not paused, mode == 1)
+		engine_audio.call("set_engine", music_enabled and not paused, 20.0)
 
 func _event(kind: String) -> void:
 	if not running or paused or countdown > 0:
@@ -271,8 +267,8 @@ func _process(delta: float) -> void:
 		else:
 			car.position.x = -5.5 if i == 0 else 5.5
 			car.rotation.y = 0
-		for wheel in wheels[i]:
-			wheel.rotation.x += delta * speed * 0.45
+			car.call("spin", delta, speed)
+	engine_audio.call("set_engine", music_enabled, 24.0 + nitro * 0.15)
 	status.text = ("RACING LIVE" if mode == 0 else "FUNK DRIFT LIVE") + (" | PAUSADO" if paused else "")
 	score.text = "Vermelho: %d/%d voltas | Azul: %d/%d voltas" % [laps[0], LAPS, laps[1], LAPS]
 	stats.text = "Nitro %d%% | Hype %d%% | Curtidas %d | Comentarios %d | Presentes %d" % [int(nitro), int(hype), likes, comments, gifts]
