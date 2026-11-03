@@ -55,6 +55,9 @@ func _ready() -> void:
 	add_child(smoke)
 	engine_audio = load("res://engine_audio.gd").new()
 	add_child(engine_audio)
+	event_bridge = load("res://live_event_adapter.gd").new()
+	add_child(event_bridge)
+	event_bridge.connect("interaction", Callable(self, "_event"))
 	_show_menu()
 
 func _material(color: Color, emissive := false) -> StandardMaterial3D:
