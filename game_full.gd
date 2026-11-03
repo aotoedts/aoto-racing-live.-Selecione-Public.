@@ -105,8 +105,8 @@ func _build_world() -> void:
 	add_child(camera)
 	camera.current = true
 	camera.fov = 67
-	camera.position = Vector3(0, 11, 23)
-	camera.look_at(Vector3(0, 0, -10))
+	camera.position = Vector3(0, 9, 23)
+	camera.look_at(Vector3(0, 0, 0))
 	var sun := DirectionalLight3D.new()
 	add_child(sun)
 	sun.rotation_degrees = Vector3(-55, 20, 0)
@@ -245,6 +245,8 @@ func _process(delta: float) -> void:
 	if not running or paused:
 		return
 	if countdown > 0:
+		for i in range(vehicles.size()):
+			vehicles[i].position = Vector3(-5.5 if i == 0 else 5.5, 0, 6)
 		countdown -= delta
 		countdown_label.text = "LARGADA EM: %d" % maxi(1, ceili(countdown)) if countdown > 0 else "VAI!"
 		return
@@ -272,6 +274,10 @@ func _process(delta: float) -> void:
 			car.position.x = -5.5 if i == 0 else 5.5
 			car.rotation.y = 0
 			car.call("spin", delta, speed)
+	var camera_target: Vector3 = (vehicles[0].global_position + vehicles[1].global_position) * 0.5
+	var desired_camera := camera_target + Vector3(0, 8.0, 20.0)
+	camera.global_position = camera.global_position.lerp(desired_camera, minf(1.0, delta * 3.5))
+	camera.look_at(camera_target + Vector3(0, 0.6, -7.0), Vector3.UP)
 	engine_audio.call("set_engine", music_enabled, 24.0 + nitro * 0.15)
 	status.text = ("RACING LIVE" if mode == 0 else "FUNK DRIFT LIVE") + (" | PAUSADO" if paused else "")
 	score.text = "Vermelho: %d/%d voltas | Azul: %d/%d voltas" % [laps[0], LAPS, laps[1], LAPS]
