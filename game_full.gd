@@ -38,12 +38,19 @@ var glow_nodes: Array[MeshInstance3D] = []
 var particles: Array[MeshInstance3D] = []
 var track_mesh: Node3D
 var rng := RandomNumberGenerator.new()
+var arcade_audio: Node
+var smoke: Node3D
+var smoke_timer := 0.0
 
 func _ready() -> void:
 	rng.randomize()
 	_load_settings()
 	_build_world()
 	_build_interface()
+	arcade_audio = load("res://audio_arcade.gd").new()
+	add_child(arcade_audio)
+	smoke = load("res://drift_smoke.gd").new()
+	add_child(smoke)
 	_show_menu()
 
 func _material(color: Color, emissive := false) -> StandardMaterial3D:
@@ -178,6 +185,7 @@ func _build_interface() -> void:
 	_label("CONFIGURACOES", settings_col, 30)
 	_button("QUALIDADE: ALTERNAR", settings_col, func(): quality_low = not quality_low; _save_settings())
 	_button("VELOCIDADE: ALTERNAR", settings_col, func(): speed_multiplier = 1.25 if speed_multiplier == 1.0 else 1.0; _save_settings())
+	_button("SOM ORIGINAL: LIGAR / DESLIGAR", settings_col, func(): music_enabled = not music_enabled; _save_settings())
 	_button("VOLTAR", settings_col, _show_menu)
 
 func _show_menu() -> void:
@@ -186,6 +194,8 @@ func _show_menu() -> void:
 	menu.visible = true
 	hud.visible = false
 	settings_panel.visible = false
+	if arcade_audio != null:
+		arcade_audio.set_music(false, mode == 1)
 
 func _show_settings() -> void:
 	menu.visible = false
@@ -209,10 +219,12 @@ func _start(new_mode: int) -> void:
 	menu.visible = false
 	settings_panel.visible = false
 	hud.visible = true
+	arcade_audio.set_music(music_enabled, mode == 1)
 
 func _toggle_pause() -> void:
 	if running:
 		paused = not paused
+		arcade_audio.set_music(music_enabled and not paused, mode == 1)
 
 func _event(kind: String) -> void:
 	if not running or paused or countdown > 0:
@@ -238,6 +250,11 @@ func _process(delta: float) -> void:
 		return
 	countdown_label.text = ""
 	elapsed += delta
+	smoke_timer += delta
+	if mode == 1 and smoke_timer >= (0.15 if quality_low else 0.08):
+		smoke_timer = 0.0
+		for vehicle in vehicles:
+			smoke.emit_at(vehicle.global_position + Vector3(0, 0.4, 1.7))
 	nitro = maxf(0, nitro - delta * 7)
 	hype = maxf(0, hype - delta * 5)
 	for i in range(2):
@@ -261,11 +278,13 @@ func _process(delta: float) -> void:
 	stats.text = "Nitro %d%% | Hype %d%% | Curtidas %d | Comentarios %d | Presentes %d" % [int(nitro), int(hype), likes, comments, gifts]
 	if laps[0] >= LAPS or laps[1] >= LAPS:
 		running = false
+		arcade_audio.set_music(false, mode == 1)
 		result_label.text = "VENCEDOR: " + ("VERMELHO" if distance[0] >= distance[1] else "AZUL") + " | MENU para reiniciar"
 
 func _save_settings() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("graphics", "low", quality_low)
+	cfg.set_value("audio", "enabled", music_enabled)
 	cfg.set_value("gameplay", "speed", speed_multiplier)
 	cfg.save(SAVE_PATH)
 
@@ -273,4 +292,5 @@ func _load_settings() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(SAVE_PATH) == OK:
 		quality_low = bool(cfg.get_value("graphics", "low", true))
+		music_enabled = bool(cfg.get_value("audio", "enabled", false))
 		speed_multiplier = float(cfg.get_value("gameplay", "speed", 1.0))
