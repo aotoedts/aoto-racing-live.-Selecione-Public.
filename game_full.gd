@@ -18,6 +18,10 @@ var comments := 0
 var gifts := 0
 var speed_multiplier := 1.0
 var quality_low := true
+var graphics_preset := 0 # 0 performance, 1 HD, 2 Ultra experimental
+var graphics_label: Label
+var world_env: WorldEnvironment
+var main_light: DirectionalLight3D
 var music_enabled := false
 var selected_car := 0
 var laps := [0, 0]
@@ -49,6 +53,7 @@ func _ready() -> void:
 	_load_settings()
 	_build_world()
 	_build_interface()
+	_apply_graphics()
 	arcade_audio = load("res://audio_arcade.gd").new()
 	add_child(arcade_audio)
 	smoke = load("res://drift_smoke.gd").new()
@@ -108,10 +113,12 @@ func _build_world() -> void:
 	camera.position = Vector3(0, 9, 23)
 	camera.look_at(Vector3(0, 0, 0))
 	var sun := DirectionalLight3D.new()
+	main_light = sun
 	add_child(sun)
 	sun.rotation_degrees = Vector3(-55, 20, 0)
 	sun.light_energy = 0.65
 	var env := WorldEnvironment.new()
+	world_env = env
 	add_child(env)
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_COLOR
@@ -179,7 +186,8 @@ func _build_interface() -> void:
 	var settings_col := VBoxContainer.new()
 	settings_panel.add_child(settings_col)
 	_label("CONFIGURACOES", settings_col, 30)
-	_button("QUALIDADE: ALTERNAR", settings_col, func(): quality_low = not quality_low; _save_settings())
+	graphics_label = _label("GRAFICOS: DESEMPENHO", settings_col, 20)
+	_button("GRAFICOS: PROXIMO NIVEL", settings_col, _cycle_graphics)
 	_button("VELOCIDADE: ALTERNAR", settings_col, func(): speed_multiplier = 1.25 if speed_multiplier == 1.0 else 1.0; _save_settings())
 	_button("SOM ORIGINAL: LIGAR / DESLIGAR", settings_col, func(): music_enabled = not music_enabled; _save_settings())
 	_button("EVENTOS LOCAIS: LIGAR / DESLIGAR", settings_col, func(): event_bridge.set("enabled", not bool(event_bridge.get("enabled"))))
@@ -287,9 +295,30 @@ func _process(delta: float) -> void:
 		arcade_audio.call("set_music", false, mode == 1)
 		result_label.text = "VENCEDOR: " + ("VERMELHO" if distance[0] >= distance[1] else "AZUL") + " | MENU para reiniciar"
 
+func _cycle_graphics() -> void:
+	graphics_preset = (graphics_preset + 1) % 3
+	_apply_graphics()
+	_save_settings()
+
+func _apply_graphics() -> void:
+	quality_low = graphics_preset == 0
+	var labels := ["DESEMPENHO", "HD", "ULTRA (EXPERIMENTAL)"]
+	if graphics_label != null:
+		graphics_label.text = "GRAFICOS: " + labels[graphics_preset]
+	if main_light != null:
+		main_light.shadow_enabled = graphics_preset >= 1
+		main_light.light_energy = 0.6 if graphics_preset == 0 else 1.1
+	if world_env != null and world_env.environment != null:
+		world_env.environment.ambient_light_energy = 0.7 if graphics_preset == 0 else 0.95
+	var viewport := get_viewport()
+	if viewport != null:
+		viewport.scaling_3d_scale = 0.7 if graphics_preset == 0 else (1.0 if graphics_preset == 1 else 1.5)
+	# Ultra supersamples the current viewport; it does not force true 3840x2160 output.
+
 func _save_settings() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("graphics", "low", quality_low)
+	cfg.set_value("graphics", "preset", graphics_preset)
 	cfg.set_value("audio", "enabled", music_enabled)
 	cfg.set_value("gameplay", "speed", speed_multiplier)
 	cfg.save(SAVE_PATH)
@@ -298,5 +327,6 @@ func _load_settings() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(SAVE_PATH) == OK:
 		quality_low = bool(cfg.get_value("graphics", "low", true))
+		graphics_preset = clampi(int(cfg.get_value("graphics", "preset", 0)), 0, 2)
 		music_enabled = bool(cfg.get_value("audio", "enabled", false))
 		speed_multiplier = float(cfg.get_value("gameplay", "speed", 1.0))
