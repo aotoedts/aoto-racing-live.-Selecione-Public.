@@ -32,6 +32,18 @@ func _ready() -> void:
 	_part(Vector3(2.85, 0.12, 0.5), Vector3(0, 1.4, 2.1), paint)
 	_part(Vector3(1.7, 0.12, 0.18), Vector3(0, 1.68, 2.1), paint)
 	_part(Vector3(1.9, 0.12, 0.2), Vector3(0, 0.63, -2.5), Color("#202632"))
+	# Aerodynamic bodywork, underglow, exhaust and additional LED details.
+	_part(Vector3(2.55, 0.18, 0.22), Vector3(0, 0.55, -2.57), Color("#080b13"))
+	_part(Vector3(2.4, 0.12, 0.35), Vector3(0, 0.48, 2.53), Color("#080b13"))
+	for x in [-1.05, 1.05]:
+		_part(Vector3(0.13, 0.19, 3.2), Vector3(x, 0.72, 0), paint.darkened(0.25))
+		_part(Vector3(0.18, 0.10, 1.6), Vector3(x, 1.14, -0.9), Color("#121a2a"))
+		_part(Vector3(0.36, 0.15, 0.25), Vector3(x, 1.43, -0.65), paint)
+		_part(Vector3(0.18, 0.35, 0.2), Vector3(x, 1.40, 1.94), Color("#111520"))
+	_part(Vector3(2.0, 0.055, 3.7), Vector3(0, 0.25, 0), Color("#11bfff"), true)
+	_part(Vector3(1.65, 0.055, 0.08), Vector3(0, 0.98, 2.56), Color("#fa2e5e"), true)
+	for x in [-0.85, 0.85]:
+		_part(Vector3(0.3, 0.16, 0.18), Vector3(x, 0.49, 2.58), Color("#777e8d"))
 	for x in [-0.95, 0.95]:
 		_part(Vector3(0.55, 0.15, 0.16), Vector3(x, 0.88, -2.53), Color("#c5f9ff"), true)
 		_part(Vector3(0.5, 0.13, 0.14), Vector3(x, 0.88, 2.53), Color("#ff284d"), true)
@@ -49,6 +61,15 @@ func _ready() -> void:
 			tire.rotation.z = PI / 2
 			tire.material_override = _mat(Color("#0c0e15"))
 			wheel.add_child(tire)
+			var rim := MeshInstance3D.new()
+			var rim_mesh := CylinderMesh.new()
+			rim_mesh.top_radius = 0.29
+			rim_mesh.bottom_radius = 0.29
+			rim_mesh.height = 0.37
+			rim.mesh = rim_mesh
+			rim.rotation.z = PI / 2
+			rim.material_override = _mat(Color("#b3c3d9"))
+			wheel.add_child(rim)
 			wheels.append(wheel)
 
 func spin(delta: float, speed: float) -> void:
