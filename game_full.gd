@@ -47,11 +47,14 @@ var smoke: Node3D
 var smoke_timer := 0.0
 var engine_audio: Node
 var event_bridge: Node
+var night_city: Node3D
 
 func _ready() -> void:
 	rng.randomize()
 	_load_settings()
 	_build_world()
+	night_city = load("res://night_city.gd").new()
+	add_child(night_city)
 	_build_interface()
 	_apply_graphics()
 	arcade_audio = load("res://audio_arcade.gd").new()
@@ -302,6 +305,8 @@ func _cycle_graphics() -> void:
 
 func _apply_graphics() -> void:
 	quality_low = graphics_preset == 0
+	if night_city != null:
+		night_city.call("set_detail", graphics_preset > 0)
 	var labels := ["DESEMPENHO", "HD", "ULTRA (EXPERIMENTAL)"]
 	if graphics_label != null:
 		graphics_label.text = "GRAFICOS: " + labels[graphics_preset]
