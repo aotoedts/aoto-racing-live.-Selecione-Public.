@@ -195,7 +195,7 @@ func _show_menu() -> void:
 	hud.visible = false
 	settings_panel.visible = false
 	if arcade_audio != null:
-		arcade_audio.set_music(false, mode == 1)
+		arcade_audio.call("set_music", false, mode == 1)
 
 func _show_settings() -> void:
 	menu.visible = false
@@ -219,12 +219,12 @@ func _start(new_mode: int) -> void:
 	menu.visible = false
 	settings_panel.visible = false
 	hud.visible = true
-	arcade_audio.set_music(music_enabled, mode == 1)
+	arcade_audio.call("set_music", music_enabled, mode == 1)
 
 func _toggle_pause() -> void:
 	if running:
 		paused = not paused
-		arcade_audio.set_music(music_enabled and not paused, mode == 1)
+		arcade_audio.call("set_music", music_enabled and not paused, mode == 1)
 
 func _event(kind: String) -> void:
 	if not running or paused or countdown > 0:
@@ -254,7 +254,7 @@ func _process(delta: float) -> void:
 	if mode == 1 and smoke_timer >= (0.15 if quality_low else 0.08):
 		smoke_timer = 0.0
 		for vehicle in vehicles:
-			smoke.emit_at(vehicle.global_position + Vector3(0, 0.4, 1.7))
+			smoke.call("emit_at", vehicle.global_position + Vector3(0, 0.4, 1.7))
 	nitro = maxf(0, nitro - delta * 7)
 	hype = maxf(0, hype - delta * 5)
 	for i in range(2):
@@ -278,7 +278,7 @@ func _process(delta: float) -> void:
 	stats.text = "Nitro %d%% | Hype %d%% | Curtidas %d | Comentarios %d | Presentes %d" % [int(nitro), int(hype), likes, comments, gifts]
 	if laps[0] >= LAPS or laps[1] >= LAPS:
 		running = false
-		arcade_audio.set_music(false, mode == 1)
+		arcade_audio.call("set_music", false, mode == 1)
 		result_label.text = "VENCEDOR: " + ("VERMELHO" if distance[0] >= distance[1] else "AZUL") + " | MENU para reiniciar"
 
 func _save_settings() -> void:
